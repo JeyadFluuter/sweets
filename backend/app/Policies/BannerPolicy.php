@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Policies;
+
+use App\Enums\Role;
+use App\Models\Banner;
+use App\Models\User;
+
+class BannerPolicy
+{
+    public function before(User $user, string $ability): ?bool
+    {
+        return $user->hasRole(Role::SuperAdmin->value) ? true : null;
+    }
+
+    public function viewAny(User $user): bool
+    {
+        return $user->can('banners.view');
+    }
+
+    public function view(User $user, Banner $banner): bool
+    {
+        return $user->can('banners.view');
+    }
+
+    public function create(User $user): bool
+    {
+        return $user->can('banners.create');
+    }
+
+    public function update(User $user, Banner $banner): bool
+    {
+        return $user->can('banners.update');
+    }
+
+    public function delete(User $user, Banner $banner): bool
+    {
+        return $user->can('banners.delete');
+    }
+}

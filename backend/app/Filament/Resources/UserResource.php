@@ -1,0 +1,79 @@
+<?php
+
+namespace App\Filament\Resources;
+
+use App\Support\AdminNavigation;
+
+use App\Enums\Role;
+use App\Filament\Resources\UserResource\Pages;
+use App\Models\User;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+class UserResource extends Resource
+{
+    protected static ?string $model = User::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+
+    protected static ?string $navigationLabel = 'الموظفون';
+
+    protected static ?string $modelLabel = 'موظف';
+
+    protected static ?string $pluralModelLabel = 'الموظفون';
+
+    protected static ?string $navigationGroup = AdminNavigation::PEOPLE;
+
+    protected static ?int $navigationSort = 2;
+
+    public static function form(Form $form): Form
+    {
+        return $form->schema([
+            Forms\Components\TextInput::make('name')->label('الاسم')->required(),
+            Forms\Components\TextInput::make('email')->label('البريد')->email()->required()->unique(ignoreRecord: true),
+            Forms\Components\TextInput::make('phone')->label('الهاتف')->tel(),
+            Forms\Components\TextInput::make('password')
+                ->label('كلمة المرور')
+                ->password()
+                ->dehydrated(fn (?string $state) => filled($state))
+                ->required(fn (string $operation) => $operation === 'create'),
+            Forms\Components\Select::make('roles')
+                ->label('الدور')
+                ->relationship('roles', 'name')
+                ->multiple()
+                ->preload()
+                ->required()
+                ->getOptionLabelFromRecordUsing(fn ($record) => Role::tryFrom($record->name)?->label() ?? $record->name),
+            Forms\Components\Toggle::make('is_active')->label('نشط')->default(true),
+            Forms\Components\DateTimePicker::make('expires_at')->label('انتهاء الحساب'),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('name')->label('الاسم')->searchable(),
+                Tables\Columns\TextColumn::make('email')->label('البريد')->searchable(),
+                Tables\Columns\TextColumn::make('roles.name')
+                    ->label('الأدوار')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => Role::tryFrom($state)?->label() ?? $state),
+                Tables\Columns\IconColumn::make('is_active')->label('نشط')->boolean(),
+                Tables\Columns\TextColumn::make('expires_at')->label('الانتهاء')->dateTime('Y-m-d')->placeholder('—'),
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make()->label('تعديل'),
+                Tables\Actions\DeleteAction::make()->label('حذف'),
+            ]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ManageUsers::route('/'),
+        ];
+    }
+}
